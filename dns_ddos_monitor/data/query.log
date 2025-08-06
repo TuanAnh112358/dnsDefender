@@ -1,0 +1,7 @@
+06-Jan-2024 10:30:15.123 client 192.168.85.100#54321 (google.com): query: google.com IN A + (192.168.85.130)
+06-Jan-2024 10:30:16.234 client 192.168.85.100#54322 (facebook.com): query: facebook.com IN A + (192.168.85.130)
+06-Jan-2024 10:30:17.345 client 192.168.85.101#54323 (randomdomain123.com): query: randomdomain123.com IN A + (192.168.85.130)
+06-Jan-2024 10:30:18.456 client 192.168.85.102#54324 (example.com): query: example.com IN ANY + (192.168.85.130)
+06-Jan-2024 10:30:19.567 client 192.168.85.103#54325 (xkjdlaksjd.com): query: xkjdlaksjd.com IN A + (192.168.85.130)
+06-Jan-2024 10:30:20.678 client 192.168.85.100#54326 (google.com): query: google.com IN TXT + (192.168.85.130)
+06-Jan-2024 10:30:21.789 client 192.168.85.104#54327 (qwerty123456.net): query: qwerty123456.net IN A + (192.168.85.130)
