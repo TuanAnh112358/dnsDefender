@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS DDoS Monitor Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        
+        .alert-high {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .alert-medium {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .alert-low {
+            border-left: 4px solid #28a745;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 400px;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: #28a745;
+        }
+        
+        .status-offline {
+            background-color: #dc3545;
+        }
+        
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+        }
+        
+        .sidebar {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        
+        .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-shield-alt"></i> DNS DDoS Monitor</h1>
+                    <p class="mb-0">Giám sát và phát hiện tấn công DDoS vào hệ thống DNS</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex align-items-center justify-content-end">
+                        <span class="status-indicator status-online"></span>
+                        <span>System Online</span>
+                        <span class="ms-3" id="last-update">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar">
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#overview"><i class="fas fa-tachometer-alt"></i> Tổng quan</a>
+                    <a class="nav-link" href="#alerts"><i class="fas fa-exclamation-triangle"></i> Cảnh báo</a>
+                    <a class="nav-link" href="#clients"><i class="fas fa-users"></i> Clients</a>
+                    <a class="nav-link" href="#domains"><i class="fas fa-globe"></i> Domains</a>
+                    <a class="nav-link" href="#charts"><i class="fas fa-chart-bar"></i> Biểu đồ</a>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10">
+                <!-- Statistics Cards -->
+                <div class="row" id="overview">
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="total-alerts">0</div>
+                            <div class="stat-label">Tổng cảnh báo</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="active-clients">0</div>
+                            <div class="stat-label">Clients hoạt động</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="unique-domains">0</div>
+                            <div class="stat-label">Domains duy nhất</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number text-danger" id="high-severity">0</div>
+                            <div class="stat-label">Mức độ cao</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row" id="charts">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-chart-line"></i> Timeline Tấn công</h5>
+                            <div id="alerts-timeline"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-chart-pie"></i> Loại Tấn công</h5>
+                            <div id="attack-types-chart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-chart-bar"></i> Top Attackers</h5>
+                            <div id="top-attackers-chart"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-chart-bar"></i> Query Volume</h5>
+                            <div id="query-volume-chart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tables Row -->
+                <div class="row">
+                    <!-- Recent Alerts -->
+                    <div class="col-md-6" id="alerts">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Cảnh báo gần đây</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Thời gian</th>
+                                            <th>Loại</th>
+                                            <th>IP</th>
+                                            <th>Mức độ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-alerts">
+                                        <tr>
+                                            <td colspan="4" class="text-center">Đang tải...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Clients -->
+                    <div class="col-md-6" id="clients">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-users"></i> Top Clients</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>IP Address</th>
+                                            <th>Queries</th>
+                                            <th>Last Seen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-clients">
+                                        <tr>
+                                            <td colspan="3" class="text-center">Đang tải...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Domains -->
+                <div class="row">
+                    <div class="col-md-12" id="domains">
+                        <div class="chart-container">
+                            <h5><i class="fas fa-globe"></i> Top Domains</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Domain</th>
+                                            <th>Query Count</th>
+                                            <th>Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-domains">
+                                        <tr>
+                                            <td colspan="3" class="text-center">Đang tải...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="btn btn-primary btn-lg refresh-btn" onclick="refreshData()">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script>
+        let refreshInterval;
+
+        // Khởi tạo khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            startAutoRefresh();
+        });
+
+        function refreshData() {
+            console.log('Refreshing data...');
+            updateStats();
+            updateCharts();
+            updateTables();
+        }
+
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-alerts').textContent = data.total_alerts || 0;
+                    document.getElementById('active-clients').textContent = data.active_clients || 0;
+                    document.getElementById('unique-domains').textContent = data.unique_domains || 0;
+                    
+                    const highSeverity = data.alert_severity ? (data.alert_severity.HIGH || 0) : 0;
+                    document.getElementById('high-severity').textContent = highSeverity;
+                    
+                    // Update last update time
+                    const now = new Date();
+                    document.getElementById('last-update').textContent = now.toLocaleTimeString();
+                })
+                .catch(error => {
+                    console.error('Error updating stats:', error);
+                });
+        }
+
+        function updateCharts() {
+            // Timeline chart
+            fetch('/api/alerts_timeline')
+                .then(response => response.json())
+                .then(data => {
+                    Plotly.newPlot('alerts-timeline', data.data, data.layout, {responsive: true});
+                })
+                .catch(error => console.error('Error loading timeline:', error));
+
+            // Attack types chart
+            fetch('/api/attack_types_chart')
+                .then(response => response.json())
+                .then(data => {
+                    Plotly.newPlot('attack-types-chart', data.data, data.layout, {responsive: true});
+                })
+                .catch(error => console.error('Error loading attack types:', error));
+
+            // Top attackers chart
+            fetch('/api/top_attackers_chart')
+                .then(response => response.json())
+                .then(data => {
+                    Plotly.newPlot('top-attackers-chart', data.data, data.layout, {responsive: true});
+                })
+                .catch(error => console.error('Error loading top attackers:', error));
+
+            // Query volume chart
+            fetch('/api/query_volume_chart')
+                .then(response => response.json())
+                .then(data => {
+                    Plotly.newPlot('query-volume-chart', data.data, data.layout, {responsive: true});
+                })
+                .catch(error => console.error('Error loading query volume:', error));
+        }
+
+        function updateTables() {
+            // Recent alerts
+            fetch('/api/recent_alerts?limit=20')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('recent-alerts');
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Chưa có cảnh báo nào</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.map(alert => {
+                        const time = new Date(alert.timestamp).toLocaleTimeString();
+                        const severityClass = alert.severity === 'HIGH' ? 'alert-high' : 
+                                            alert.severity === 'MEDIUM' ? 'alert-medium' : 'alert-low';
+                        
+                        return `
+                            <tr class="${severityClass}">
+                                <td>${time}</td>
+                                <td><span class="badge bg-danger">${alert.type}</span></td>
+                                <td>${alert.client_ip}</td>
+                                <td><span class="badge bg-${alert.severity === 'HIGH' ? 'danger' : alert.severity === 'MEDIUM' ? 'warning' : 'success'}">${alert.severity}</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(error => console.error('Error loading alerts:', error));
+
+            // Top clients
+            fetch('/api/top_clients')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('top-clients');
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center">Chưa có dữ liệu</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.slice(0, 15).map(client => {
+                        const lastSeen = client.last_seen ? 
+                            new Date(client.last_seen).toLocaleTimeString() : 'N/A';
+                        
+                        return `
+                            <tr>
+                                <td>${client.ip}</td>
+                                <td><span class="badge bg-primary">${client.query_count}</span></td>
+                                <td>${lastSeen}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(error => console.error('Error loading clients:', error));
+
+            // Top domains
+            fetch('/api/top_domains')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('top-domains');
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center">Chưa có dữ liệu</td></tr>';
+                        return;
+                    }
+                    
+                    const total = data.reduce((sum, domain) => sum + domain.query_count, 0);
+                    
+                    tbody.innerHTML = data.slice(0, 15).map(domain => {
+                        const percentage = total > 0 ? ((domain.query_count / total) * 100).toFixed(1) : 0;
+                        
+                        return `
+                            <tr>
+                                <td>${domain.domain}</td>
+                                <td><span class="badge bg-info">${domain.query_count}</span></td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%">${percentage}%</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(error => console.error('Error loading domains:', error));
+        }
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshData, 10000); // Refresh every 10 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({behavior: 'smooth'});
+                }
+                
+                // Update active nav link
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Handle window resize for charts
+        window.addEventListener('resize', function() {
+            setTimeout(() => {
+                Plotly.Plots.resize('alerts-timeline');
+                Plotly.Plots.resize('attack-types-chart');
+                Plotly.Plots.resize('top-attackers-chart');
+                Plotly.Plots.resize('query-volume-chart');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

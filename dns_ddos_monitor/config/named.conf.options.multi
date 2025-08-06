@@ -1,0 +1,68 @@
+options {
+        directory "/var/cache/bind";
+
+        // Cho phép truy vấn từ mạng local
+        allow-query { 192.168.85.0/24; localhost; };
+        allow-recursion { 192.168.85.0/24; localhost; };
+        
+        // Listen trên tất cả interfaces
+        listen-on { any; };
+        listen-on-v6 { none; };
+        
+        // Forwarders
+        forwarders {
+                8.8.8.8;
+                8.8.4.4;
+                1.1.1.1;
+        };
+
+        // Cấu hình bảo mật
+        version "DNS Server";
+        
+        // Rate limiting để chống DDoS - điều chỉnh cho test
+        rate-limit {
+                responses-per-second 30;
+                window 5;
+                slip 2;
+                exempt-clients { 192.168.85.135/32; localhost; };
+        };
+
+        // Cấu hình logging chi tiết
+        querylog yes;
+        
+        // DNSSEC
+        dnssec-validation auto;
+        
+        auth-nxdomain no;
+};
+
+// Cấu hình logging
+logging {
+        channel default_debug {
+                file "/var/log/dns_monitor/named.log";
+                severity debug;
+                print-time yes;
+                print-severity yes;
+                print-category yes;
+        };
+        
+        channel query_log {
+                file "/var/log/dns_monitor/query.log" versions 3 size 100m;
+                severity info;
+                print-time yes;
+                print-severity yes;
+        };
+        
+        channel security_log {
+                file "/var/log/dns_monitor/security.log" versions 3 size 50m;
+                severity warning;
+                print-time yes;
+                print-severity yes;
+        };
+        
+        category default { default_debug; };
+        category queries { query_log; };
+        category security { security_log; };
+        category rate-limit { security_log; };
+        category client { security_log; };
+};

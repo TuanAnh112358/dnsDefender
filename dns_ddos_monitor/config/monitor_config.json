@@ -1,0 +1,56 @@
+{
+    "log_files": [
+        "/var/log/dns_monitor/query.log",
+        "/var/log/dns_monitor/security.log",
+        "/var/log/syslog"
+    ],
+    "output_dir": "logs",
+    "alert_file": "logs/alerts.json",
+    "stats_file": "logs/stats.json",
+    "thresholds": {
+        "queries_per_second": 50,
+        "queries_per_minute": 300,
+        "unique_domains_per_client": 100,
+        "nxdomain_ratio": 0.7,
+        "amplification_size": 512,
+        "suspicious_query_types": ["ANY", "TXT"],
+        "max_query_length": 255
+    },
+    "detection_rules": {
+        "dns_flood": {
+            "enabled": true,
+            "threshold": 300,
+            "time_window": 60,
+            "severity": "HIGH"
+        },
+        "nxdomain_attack": {
+            "enabled": true,
+            "threshold": 50,
+            "time_window": 60,
+            "severity": "MEDIUM"
+        },
+        "amplification_attack": {
+            "enabled": true,
+            "query_types": ["ANY", "TXT"],
+            "severity": "HIGH"
+        },
+        "subdomain_enumeration": {
+            "enabled": true,
+            "threshold": 100,
+            "time_window": 300,
+            "severity": "MEDIUM"
+        }
+    },
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "file": "logs/dns_monitor.log",
+        "max_size": "10MB",
+        "backup_count": 5
+    },
+    "monitoring": {
+        "refresh_interval": 5,
+        "alert_cooldown": 300,
+        "max_alerts_per_ip": 10
+    }
+}

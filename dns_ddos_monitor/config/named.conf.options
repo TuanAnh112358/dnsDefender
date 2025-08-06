@@ -1,0 +1,69 @@
+options {
+        directory "/var/cache/bind";
+
+        // Cấu hình DNS forwarders
+        forwarders {
+                8.8.8.8;
+                8.8.4.4;
+                1.1.1.1;
+        };
+
+        // Cho phép truy vấn từ mọi nơi (chỉ dùng cho lab)
+        allow-query { any; };
+        allow-recursion { any; };
+        
+        // Cấu hình bảo mật cơ bản
+        version "DNS Server";
+        
+        // Rate limiting để chống DDoS
+        rate-limit {
+                responses-per-second 20;
+                window 5;
+                slip 2;
+                exempt-clients { localhost; };
+        };
+
+        // Cấu hình logging chi tiết
+        querylog yes;
+        
+        // Disable IPv6 nếu không cần
+        listen-on-v6 { none; };
+        
+        // Listen trên tất cả interfaces
+        listen-on { any; };
+        
+        // Cấu hình DNSSEC
+        dnssec-validation auto;
+        
+        auth-nxdomain no;    # conform to RFC1035
+};
+
+// Cấu hình logging
+logging {
+        channel default_debug {
+                file "/var/log/dns_monitor/named.log";
+                severity debug;
+                print-time yes;
+                print-severity yes;
+                print-category yes;
+        };
+        
+        channel query_log {
+                file "/var/log/dns_monitor/query.log" versions 3 size 100m;
+                severity info;
+                print-time yes;
+                print-severity yes;
+        };
+        
+        channel security_log {
+                file "/var/log/dns_monitor/security.log" versions 3 size 50m;
+                severity warning;
+                print-time yes;
+                print-severity yes;
+        };
+        
+        category default { default_debug; };
+        category queries { query_log; };
+        category security { security_log; };
+        category rate-limit { security_log; };
+};

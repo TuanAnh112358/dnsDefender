@@ -1,0 +1,43 @@
+# Fail2Ban jail configuration for DNS DDoS protection
+# File: /etc/fail2ban/jail.local
+
+[DEFAULT]
+# Ban time: 1 hour
+bantime = 3600
+
+# Find time window: 10 minutes  
+findtime = 600
+
+# Max retry before ban
+maxretry = 10
+
+# Backend for log monitoring
+backend = auto
+
+# Default action
+action = %(action_mwl)s
+
+[dns-ddos]
+enabled = true
+port = 53
+protocol = udp
+filter = dns-ddos
+logpath = /var/log/dns_monitor/query.log
+          /var/log/dns_monitor/security.log
+          /var/log/syslog
+maxretry = 20
+findtime = 300
+bantime = 1800
+action = iptables-multiport[name=DNS, port="53", protocol=udp]
+         sendmail-whois[name=DNS, dest=admin@localhost]
+
+[dns-flood]
+enabled = true
+port = 53
+protocol = udp
+filter = dns-ddos
+logpath = /var/log/dns_monitor/query.log
+maxretry = 50
+findtime = 60
+bantime = 3600
+action = iptables-multiport[name=DNS-FLOOD, port="53", protocol=udp]

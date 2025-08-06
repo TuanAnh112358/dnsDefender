@@ -1,0 +1,51 @@
+$TTL    604800
+@       IN      SOA     ns1.test.local. admin.test.local. (
+                              2024010101 ; Serial (update when changed)
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+; Name servers
+@       IN      NS      ns1.test.local.
+@       IN      NS      ns2.test.local.
+
+; A records pointing to real servers
+@       IN      A       192.168.85.130    ; DNS server itself
+ns1     IN      A       192.168.85.130    ; Primary DNS
+ns2     IN      A       192.168.85.130    ; Secondary DNS (same server)
+
+; Web services pointing to web server
+www     IN      A       192.168.85.135    ; Web server
+web     IN      A       192.168.85.135    ; Web server alias
+mail    IN      A       192.168.85.135    ; Mail server
+smtp    IN      A       192.168.85.135    ; SMTP server
+ftp     IN      A       192.168.85.135    ; FTP server
+api     IN      A       192.168.85.135    ; API endpoint
+blog    IN      A       192.168.85.135    ; Blog
+shop    IN      A       192.168.85.135    ; E-commerce
+
+; CNAME records for aliases
+webmail IN      CNAME   mail.test.local.
+email   IN      CNAME   mail.test.local.
+files   IN      CNAME   ftp.test.local.
+store   IN      CNAME   shop.test.local.
+
+; MX record for mail
+@       IN      MX      10 mail.test.local.
+
+; TXT records for testing
+@       IN      TXT     "v=spf1 ip4:192.168.85.0/24 ~all"
+@       IN      TXT     "DNS DDoS Test Domain"
+
+; SRV records for services
+_http._tcp.test.local.  IN SRV 10 60 80  www.test.local.
+_https._tcp.test.local. IN SRV 10 60 443 www.test.local.
+_ftp._tcp.test.local.   IN SRV 10 60 21  ftp.test.local.
+
+; Additional records for testing different query types
+test1   IN      A       192.168.85.135
+test2   IN      A       192.168.85.135
+test3   IN      A       192.168.85.135
+test4   IN      A       192.168.85.135
+test5   IN      A       192.168.85.135

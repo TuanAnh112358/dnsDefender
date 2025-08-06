@@ -1,0 +1,24 @@
+//
+// Do any local configuration here
+//
+
+// Zone test để thử nghiệm
+zone "test.local" {
+    type master;
+    file "/etc/bind/zones/db.test.local";
+    allow-query { any; };
+};
+
+// Zone reverse cho test
+zone "1.168.192.in-addr.arpa" {
+    type master;
+    file "/etc/bind/zones/db.192.168.1";
+    allow-query { any; };
+};
+
+// Zone để test NXDOMAIN attacks
+zone "nonexistent.local" {
+    type master;
+    file "/etc/bind/zones/db.nonexistent.local";
+    allow-query { any; };
+};

@@ -1,0 +1,33 @@
+$TTL    604800
+@       IN      SOA     test.local. root.test.local. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+
+; Name servers
+@       IN      NS      ns1.test.local.
+@       IN      NS      ns2.test.local.
+
+; A records
+@       IN      A       192.168.1.10
+ns1     IN      A       192.168.1.10
+ns2     IN      A       192.168.1.11
+www     IN      A       192.168.1.20
+mail    IN      A       192.168.1.30
+ftp     IN      A       192.168.1.40
+
+; CNAME records
+web     IN      CNAME   www.test.local.
+smtp    IN      CNAME   mail.test.local.
+
+; MX record
+@       IN      MX      10 mail.test.local.
+
+; TXT record for testing
+@       IN      TXT     "v=spf1 ip4:192.168.1.0/24 ~all"
+
+; SRV record for testing
+_sip._tcp.test.local. IN SRV 10 60 5060 sipserver.test.local.
+sipserver               IN      A       192.168.1.50
